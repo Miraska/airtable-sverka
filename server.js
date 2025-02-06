@@ -16,26 +16,21 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const app = express();
 
-// Разрешаем CORS (если нужно обращаться извне)
 app.use(cors());
-
-// Для парсинга JSON-тел запросов
 app.use(bodyParser.json());
 
 const PORT = 3000;
 
-// Путь к локальному шаблону (используем, если в S3 ещё нет файла)
+// Путь к локальному шаблону
 const excelFilePath = path.join(__dirname, 'template.xlsx');
-
-// Проверяем, что локальный шаблон существует
 if (!fs.existsSync(excelFilePath)) {
   console.error('Excel-файл не найден по пути:', excelFilePath);
   process.exit(1);
 }
 
-// Инициализируем S3-клиент для Яндекс Облака
+// Инициализируем S3-клиент (пример для Яндекс Облака)
 const s3Client = new S3Client({
-  region: 'ru-central1', // регион Яндекс Облака
+  region: 'ru-central1',
   endpoint: 'https://storage.yandexcloud.net',
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY,
@@ -43,21 +38,16 @@ const s3Client = new S3Client({
   }
 });
 
-// Имя бакета берем из .env (или можно захардкодить)
 const bucketName = process.env.S3_BUCKET || 'my-bucket-name';
-
-// Ключ (имя) файла в бакете, где будем хранить обновлённую версию
-// (Можно назвать как угодно, главное всегда читать/записывать один и тот же Key)
 const s3Key = 'uploads/updatedFile-latest.xlsx';
 
-// Тестовый GET
 app.get('/', (req, res) => {
-  res.send('Hello World! Спробуйте POST /receive-data');
+  res.send('Hello World! Попробуйте POST /receive-data');
 });
 
 /**
- * Функция: Загрузка "актуального" файла Excel из S3, если он там есть.
- * Если файла нет, возвращаем null — тогда будем использовать локальный шаблон.
+ * Пытаемся загрузить уже существующий файл из S3 (если есть).
+ * Если нет — вернётся null, тогда возьмём локальный шаблон.
  */
 async function loadWorkbookFromS3() {
   try {
@@ -67,47 +57,40 @@ async function loadWorkbookFromS3() {
         Key: s3Key
       })
     );
-    // response.Body — это поток (stream)
     const stream = response.Body;
     const chunks = [];
     for await (const chunk of stream) {
       chunks.push(chunk);
     }
     const buffer = Buffer.concat(chunks);
-    // Превращаем buffer в объект XlsxPopulate
     return XlsxPopulate.fromDataAsync(buffer);
   } catch (error) {
     if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
-      // Файл в S3 не найден
-      return null;
+      return null; // Файл не найден
     }
     throw error;
   }
 }
 
-/**
- * Функция: Загружает buffer (содержимое Excel) в S3.
- * Мы всегда перезаписываем один и тот же Key (s3Key).
- */
+/** Загрузка (перезапись) книги в S3 */
 async function uploadWorkbookToS3(buffer) {
   await s3Client.send(
     new PutObjectCommand({
       Bucket: bucketName,
       Key: s3Key,
       Body: buffer,
-      ContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ContentType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     })
   );
 }
 
 /**
- * Функция: находим первую свободную строку, начиная с заданной (startRow).
- * Проверяем ячейки в колонке B. Если она занята — идём вниз.
- * Возвращаем номер строки, которая оказалась пустой.
+ * Поиск первой свободной строки, начиная с startRow,
+ * проверяем ячейку в колонке B (например).
  */
 function findNextEmptyRow(sheet, startRow = 3) {
   let row = startRow;
-  // Пока в B<row> что-то есть — идём дальше.
   while (sheet.cell(`B${row}`).value()) {
     row++;
   }
@@ -115,65 +98,196 @@ function findNextEmptyRow(sheet, startRow = 3) {
 }
 
 /**
- * POST-запрос:
- * 1) Получаем JSON-данные
- * 2) Пытаемся загрузить уже существующий файл из S3 (если он есть)
- *    либо берём локальный template.xlsx
- * 3) Находим первую свободную строку
- * 4) Записываем новые данные
- * 5) Генерируем итоговый Excel-файл в буфере
- * 6) Перезаписываем файл в S3
- * 7) Генерируем presigned URL и возвращаем клиенту
+ * Функция заполнения одной строки: данные в нужные столбцы.
+ * По условному примеру:
+ *  - A: Цифра (можно просто 1, 2, 3, ... или Итого)
+ *  - B: Дата (дд.мм.гггг)
+ *  - D: Плательщик (Контрагент)
+ *  - E: Получатель
+ *  - F: Курс
+ *  - H: Рубли (к выдаче)
+ *  - J: Доллары (к выдаче)
+ *  - L: USDT (к выдаче)
+ *  - N: EURO (к выдаче)
+ *  - U: Комментарий
+ */
+function fillRow(sheet, rowIndex, record) {
+  // Колонка A
+  sheet.cell(`A${rowIndex}`).value(1);
+
+  // Преобразуем дату к формату дд.мм.гггг
+  // Если значение в record.Дата корректное, парсим и ставим формат
+  let dateObj = new Date(record.Дата);
+  if (!isNaN(dateObj.valueOf())) {
+    sheet.cell(`B${rowIndex}`).value(dateObj);
+    // Устанавливаем нужный формат даты
+    sheet.cell(`B${rowIndex}`).style('numberFormat', 'dd.mm.yyyy');
+  } else {
+    // Если не дата, вставляем как есть
+    sheet.cell(`B${rowIndex}`).value(record.Дата || '');
+  }
+
+  // Плательщик (у вас в JSON это "Отправитель")
+  sheet.cell(`D${rowIndex}`).value(record.Отправитель?.[0]?.name || '');
+
+  // Получатель
+  sheet.cell(`E${rowIndex}`).value(record.Получатель?.[0]?.name || '');
+
+  // Курс
+  const course = Array.isArray(record['Курс'])
+    ? record['Курс'].join('; ')
+    : record['Курс'] || '';
+  sheet.cell(`F${rowIndex}`).value(course);
+
+  // Комментарий
+  const comment = Array.isArray(record['Комментарий (from Ордер)'])
+    ? record['Комментарий (from Ордер)'].join('; ')
+    : record['Комментарий (from Ордер)'] || '';
+  sheet.cell(`U${rowIndex}`).value(comment);
+
+  // Логика раскладки по валютам:
+  // Смотрим рубли
+  if (record['Сумма RUB']) {
+    // К выдаче рубли - колонка H
+    sheet.cell(`H${rowIndex}`).value(record['Сумма RUB']);
+  }
+
+  // Доллары
+  if (record['Сумма USD']) {
+    // К выдаче доллары → колонка J
+    sheet.cell(`J${rowIndex}`).value(record['Сумма USD']);
+  }
+
+  // USDT
+  if (record['Сумма USDT']) {
+    // К выдаче USDT (ТЕЗЕР) → колонка L
+    sheet.cell(`L${rowIndex}`).value(record['Сумма USDT']);
+  }
+
+  // EURO
+  if (record['Сумма EURO']) {
+    sheet.cell(`N${rowIndex}`).value(record['Сумма EURO']);
+  }
+}
+
+/**
+ * Вставляем строку «итоговой» формулы и заливаем её чёрным цветом
+ * (текст делаем белым). Формулы для столбцов H..O (складываем значения).
+ */
+function addSummaryRow(sheet, rowIndex, startRow, endRow) {
+  // Формулы для валют
+  sheet.cell(`H${rowIndex}`).formula(`=SUM(H${startRow}:H${endRow})`);
+  sheet.cell(`I${rowIndex}`).formula(`=SUM(I${startRow}:I${endRow})`);
+  sheet.cell(`J${rowIndex}`).formula(`=SUM(J${startRow}:J${endRow})`);
+  sheet.cell(`K${rowIndex}`).formula(`=SUM(K${startRow}:K${endRow})`);
+  sheet.cell(`L${rowIndex}`).formula(`=SUM(L${startRow}:L${endRow})`);
+  sheet.cell(`M${rowIndex}`).formula(`=SUM(M${startRow}:M${endRow})`);
+  sheet.cell(`N${rowIndex}`).formula(`=SUM(N${startRow}:N${endRow})`);
+  sheet.cell(`O${rowIndex}`).formula(`=SUM(O${startRow}:O${endRow})`);
+
+  // Заливаем всю строку чёрным, делаем шрифт белым
+  sheet.row(rowIndex).style({
+    fill: '000000',
+    fontColor: 'FFFFFF',
+    bold: true
+  });
+}
+
+/**
+ * POST /receive-data
+ * 1) Принимаем массив данных
+ * 2) Грузим/создаём Excel
+ * 3) Сортируем по дате
+ * 4) Группируем (вставляем серую/итоговую строку при смене даты)
+ * 5) Сохраняем в S3
+ * 6) Отдаём presigned URL
  */
 app.post('/receive-data', async (req, res) => {
   console.log('Получен POST-запрос на /receive-data');
   try {
-    // Данные, которые прислали (например, из Airtable)
-    const data = req.body;
-    console.log('Получены данные:', data);
+    const data = req.body; // Массив записей
+    console.log('Получены данные:\n', JSON.stringify(data, null, 2));
 
-    // 1) Пытаемся загрузить уже обновлённый файл из S3
-    let workbook = await loadWorkbookFromS3();
+    // 1) Пытаемся взять актуальный файл из S3
+    // let workbook = await loadWorkbookFromS3();
 
-    // 2) Если в S3 файла нет, открываем локальный шаблон
-    if (!workbook) {
-      console.log('Файл в S3 не найден, используем локальный template.xlsx');
-      workbook = await XlsxPopulate.fromFileAsync(excelFilePath);
-    }
+    // Если нет в S3 - берём локальный шаблон
+    // if (!workbook) {
+    //   console.log('Файл в S3 не найден, используем локальный template.xlsx');
+    //   workbook = await XlsxPopulate.fromFileAsync(excelFilePath);
+    // }
 
-    // Берём первый лист (или нужный вам индекс)
+    // Для наглядности здесь просто сразу берем локальный template.xlsx
+    console.log('Файл в S3 не найден, используем локальный template.xlsx');
+    let workbook = await XlsxPopulate.fromFileAsync(excelFilePath);
+
     const sheet = workbook.sheet(0);
 
-    // 3) Находим первую пустую строку, начиная с 3-й
-    const targetRow = findNextEmptyRow(sheet, 3);
+    // 2) Сортируем записи по дате (если нужно — дополнительно по времени)
+    data.sort((a, b) => {
+      return new Date(a.Дата) - new Date(b.Дата);
+    });
 
-    // 4) Записываем данные в нужные ячейки
-    sheet.cell(`B${targetRow}`).value(data.Дата || '');
-    sheet.cell(`D${targetRow}`).value(data.Контрагент?.[0]?.name || '');
-    sheet.cell(`E${targetRow}`).value(data.Получатель?.[0]?.name || '');
-    sheet.cell(`J${targetRow}`).value(data['Сумма USD'] || 0);
+    // Вспомогательная функция для вставки "итоговой" строки
+    function insertSummaryRow() {
+      sheet.cell(`A${currentRow}`).value('Итого:');
+      addSummaryRow(sheet, currentRow, groupStartRow, currentRow - 1);
+      currentRow++;
+    }
 
-    // 5) Генерируем новый Excel-файл в буфере
+    // 3) Находим первую пустую строку в Excel
+    let currentRow = findNextEmptyRow(sheet, 3);
+
+    // Запомним, где начинается "первая группа" (для сумм)
+    let groupStartRow = currentRow;
+    let lastDate = null;
+
+    // Перебираем записи
+    for (const record of data) {
+      const currentDate = record.Дата || '';
+
+      // Если дата изменилась и у нас уже была дата, вставляем итог
+      if (lastDate && lastDate !== currentDate) {
+        insertSummaryRow();
+        groupStartRow = currentRow;
+      }
+
+      lastDate = currentDate;
+
+      // Заполняем текущую строку данными
+      fillRow(sheet, currentRow, record);
+
+      // Переходим на следующую строку
+      currentRow++;
+    }
+
+    // Когда записи закончились, но осталась "последняя" группа
+    if (data.length > 0) {
+      insertSummaryRow();
+    }
+
+    // При желании можно скрыть неиспользуемые столбцы P..T, если нужно:
+    // for (let col = 16; col <= 20; col++) {
+    //   sheet.column(col).hidden(true);
+    // }
+
+    // 4) Генерируем буфер и сохраняем обновлённый Excel обратно в S3
     const buffer = await workbook.outputAsync();
-
-    // 6) Загружаем (перезаписываем) обновлённый файл в S3
     await uploadWorkbookToS3(buffer);
-    console.log(`Файл перезаписан в S3: s3://${bucketName}/${s3Key}`);
 
-    // 7) Генерируем presigned URL (например, на 1 час)
+    // 5) Генерируем presigned URL на скачивание
     const downloadUrl = await getSignedUrl(
       s3Client,
       new GetObjectCommand({
         Bucket: bucketName,
         Key: s3Key
       }),
-      { expiresIn: 3600 } // 1 час
+      { expiresIn: 3600 }
     );
 
-    // Возвращаем ссылку
     return res.json({
       success: true,
-      message: 'File created/updated and uploaded successfully',
+      message: 'Файл успешно обновлён и загружен в S3',
       fileUrl: downloadUrl
     });
   } catch (error) {
@@ -185,10 +299,7 @@ app.post('/receive-data', async (req, res) => {
   }
 });
 
-/**
- * Пример GET-запроса на скачивание локального template.xlsx (для отладки).
- * Можно не использовать, если не нужно.
- */
+
 app.get('/download-latest', (req, res) => {
   const file = path.join(__dirname, 'template.xlsx');
   res.download(file, 'Updated.xlsx', err => {
@@ -199,7 +310,6 @@ app.get('/download-latest', (req, res) => {
   });
 });
 
-// Запуск сервера
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
   console.log(`POST на http://localhost:${PORT}/receive-data`);
