@@ -1,18 +1,18 @@
-require('dotenv').config(); // Если используете .env-файл
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
-const XlsxPopulate = require('xlsx-populate');
+require("dotenv").config(); // Если используете .env-файл
+const express = require("express");
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const path = require("path");
+const fs = require("fs");
+const XlsxPopulate = require("xlsx-populate");
 
 // Импортируем S3-клиент и утилиты для presigned URL
 const {
   S3Client,
   PutObjectCommand,
-  GetObjectCommand
-} = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+  GetObjectCommand,
+} = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 const app = express();
 
@@ -20,29 +20,29 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const PORT = 3000;
+let fileName;
 
 // Путь к локальному шаблону
-const excelFilePath = path.join(__dirname, 'template.xlsx');
+const excelFilePath = path.join(__dirname, "template.xlsx");
 if (!fs.existsSync(excelFilePath)) {
-  console.error('Excel-файл не найден по пути:', excelFilePath);
+  console.error("Excel-файл не найден по пути:", excelFilePath);
   process.exit(1);
 }
 
 // Инициализируем S3-клиент (пример для Яндекс Облака)
 const s3Client = new S3Client({
-  region: 'ru-central1',
-  endpoint: 'https://storage.yandexcloud.net',
+  region: "ru-central1",
+  endpoint: "https://storage.yandexcloud.net",
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY,
-    secretAccessKey: process.env.S3_SECRET_KEY
-  }
+    secretAccessKey: process.env.S3_SECRET_KEY,
+  },
 });
 
-const bucketName = process.env.S3_BUCKET || 'my-bucket-name';
-const s3Key = 'uploads/updatedFile-latest.xlsx';
+const bucketName = process.env.S3_BUCKET || "my-bucket-name";
 
-app.get('/', (req, res) => {
-  res.send('Hello World! Попробуйте POST /receive-data');
+app.get("/", (req, res) => {
+  res.send("Hello World! Попробуйте POST /receive-data");
 });
 
 /**
@@ -54,7 +54,7 @@ async function loadWorkbookFromS3() {
     const response = await s3Client.send(
       new GetObjectCommand({
         Bucket: bucketName,
-        Key: s3Key
+        Key: `uploads/${fileName}.xlsx`,
       })
     );
     const stream = response.Body;
@@ -65,7 +65,7 @@ async function loadWorkbookFromS3() {
     const buffer = Buffer.concat(chunks);
     return XlsxPopulate.fromDataAsync(buffer);
   } catch (error) {
-    if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+    if (error.name === "NoSuchKey" || error.$metadata?.httpStatusCode === 404) {
       return null; // Файл не найден
     }
     throw error;
@@ -77,10 +77,10 @@ async function uploadWorkbookToS3(buffer) {
   await s3Client.send(
     new PutObjectCommand({
       Bucket: bucketName,
-      Key: s3Key,
+      Key: `uploads/${fileName}.xlsx`,
       Body: buffer,
       ContentType:
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     })
   );
 }
@@ -111,7 +111,7 @@ function findNextEmptyRow(sheet, startRow = 3) {
  *  - N: EURO (к выдаче)
  *  - U: Комментарий
  */
-function fillRow(sheet, rowIndex, record) {
+function fillRow(sheet, rowIndex, record, startRow = 3) {
   // Колонка A
   sheet.cell(`A${rowIndex}`).value(1);
 
@@ -121,53 +121,83 @@ function fillRow(sheet, rowIndex, record) {
   if (!isNaN(dateObj.valueOf())) {
     sheet.cell(`B${rowIndex}`).value(dateObj);
     // Устанавливаем нужный формат даты
-    sheet.cell(`B${rowIndex}`).style('numberFormat', 'dd.mm.yyyy');
+    sheet.cell(`B${rowIndex}`).style("numberFormat", "dd.mm.yyyy");
   } else {
     // Если не дата, вставляем как есть
-    sheet.cell(`B${rowIndex}`).value(record.Дата || '');
+    sheet.cell(`B${rowIndex}`).value(record.Дата || "");
   }
 
   // Плательщик (у вас в JSON это "Отправитель")
-  sheet.cell(`D${rowIndex}`).value(record.Отправитель?.[0]?.name || '');
+  sheet.cell(`D${rowIndex}`).value(record.Отправитель?.[0]?.name || "");
 
   // Получатель
-  sheet.cell(`E${rowIndex}`).value(record.Получатель?.[0]?.name || '');
+  sheet.cell(`E${rowIndex}`).value(record.Получатель?.[0]?.name || "");
 
   // Курс
-  const course = Array.isArray(record['Курс'])
-    ? record['Курс'].join('; ')
-    : record['Курс'] || '';
+  const course = Array.isArray(record["Курс"])
+    ? record["Курс"].join("; ")
+    : record["Курс"] || "";
   sheet.cell(`F${rowIndex}`).value(course);
 
   // Комментарий
-  const comment = Array.isArray(record['Комментарий (from Ордер)'])
-    ? record['Комментарий (from Ордер)'].join('; ')
-    : record['Комментарий (from Ордер)'] || '';
-  sheet.cell(`U${rowIndex}`).value(comment);
+  const comment = Array.isArray(record["Комментарий (from Ордер)"])
+    ? record["Комментарий (from Ордер)"].join("; ")
+    : record["Комментарий (from Ордер)"] || "";
+  sheet.cell(`AA${rowIndex}`).value(comment);
 
   // Логика раскладки по валютам:
+
   // Смотрим рубли
-  if (record['Сумма RUB']) {
+  if (record["Сумма RUB"]) {
     // К выдаче рубли - колонка H
-    sheet.cell(`H${rowIndex}`).value(record['Сумма RUB']);
+    sheet.cell(`H${rowIndex}`).value(record["Сумма RUB"]);
   }
 
   // Доллары
-  if (record['Сумма USD']) {
+  if (record["Сумма USD"]) {
     // К выдаче доллары → колонка J
-    sheet.cell(`J${rowIndex}`).value(record['Сумма USD']);
+    sheet.cell(`J${rowIndex}`).value(record["Сумма USD"]);
   }
 
   // USDT
-  if (record['Сумма USDT']) {
+  if (record["Сумма USDT"]) {
     // К выдаче USDT (ТЕЗЕР) → колонка L
-    sheet.cell(`L${rowIndex}`).value(record['Сумма USDT']);
+    sheet.cell(`L${rowIndex}`).value(record["Сумма USDT"]);
   }
 
   // EURO
-  if (record['Сумма EURO']) {
-    sheet.cell(`N${rowIndex}`).value(record['Сумма EURO']);
+  if (record["Сумма EURO"]) {
+    sheet.cell(`N${rowIndex}`).value(record["Сумма EURO"]);
   }
+
+  // CNY
+  if (record["Сумма CNY"]) {
+    sheet.cell(`P${rowIndex}`).value(record["Сумма CNY"]);
+  }
+
+  // AED
+  if (record["Сумма AED"]) {
+    sheet.cell(`R${rowIndex}`).value(record["Сумма AED"]);
+  }
+
+
+  // Баланс на конец дня Рубли
+  sheet.cell(`U${rowIndex}`).formula(`=SUM(H${startRow}:I${rowIndex})`);
+
+  // Баланс на конец дня Доллары
+  sheet.cell(`V${rowIndex}`).formula(`=SUM(J${startRow}:K${rowIndex})`);
+
+  // Баланс на конец дня USDT
+  sheet.cell(`W${rowIndex}`).formula(`=SUM(L${startRow}:M${rowIndex})`);
+
+  // Баланс на конец дня EURO
+  sheet.cell(`X${rowIndex}`).formula(`=SUM(N${startRow}:O${rowIndex})`);
+
+  // Баланс на конец дня CNY
+  sheet.cell(`Y${rowIndex}`).formula(`=SUM(P${startRow}:Q${rowIndex})`);
+
+  // Баланс на конец дня AED
+  sheet.cell(`Z${rowIndex}`).formula(`=SUM(R${startRow}:S${rowIndex})`);
 }
 
 /**
@@ -184,12 +214,23 @@ function addSummaryRow(sheet, rowIndex, startRow, endRow) {
   sheet.cell(`M${rowIndex}`).formula(`=SUM(M${startRow}:M${endRow})`);
   sheet.cell(`N${rowIndex}`).formula(`=SUM(N${startRow}:N${endRow})`);
   sheet.cell(`O${rowIndex}`).formula(`=SUM(O${startRow}:O${endRow})`);
+  sheet.cell(`P${rowIndex}`).formula(`=SUM(P${startRow}:P${endRow})`);
+  sheet.cell(`Q${rowIndex}`).formula(`=SUM(Q${startRow}:Q${endRow})`);
+  sheet.cell(`R${rowIndex}`).formula(`=SUM(R${startRow}:R${endRow})`);
+  sheet.cell(`S${rowIndex}`).formula(`=SUM(S${startRow}:S${endRow})`);
+
+  sheet.cell(`U${rowIndex}`).formula(`=SUM(U${startRow}:U${endRow})`);
+  sheet.cell(`V${rowIndex}`).formula(`=SUM(V${startRow}:V${endRow})`);
+  sheet.cell(`W${rowIndex}`).formula(`=SUM(W${startRow}:W${endRow})`);
+  sheet.cell(`X${rowIndex}`).formula(`=SUM(X${startRow}:X${endRow})`);
+  sheet.cell(`Y${rowIndex}`).formula(`=SUM(Y${startRow}:Y${endRow})`);
+  sheet.cell(`Z${rowIndex}`).formula(`=SUM(Z${startRow}:Z${endRow})`);
 
   // Заливаем всю строку чёрным, делаем шрифт белым
   sheet.row(rowIndex).style({
-    fill: '000000',
-    fontColor: 'FFFFFF',
-    bold: true
+    fill: "000000",
+    fontColor: "FFFFFF",
+    bold: true,
   });
 }
 
@@ -202,11 +243,13 @@ function addSummaryRow(sheet, rowIndex, startRow, endRow) {
  * 5) Сохраняем в S3
  * 6) Отдаём presigned URL
  */
-app.post('/receive-data', async (req, res) => {
-  console.log('Получен POST-запрос на /receive-data');
+app.post("/receive-data", async (req, res) => {
+  console.log("Получен POST-запрос на /receive-data");
   try {
-    const data = req.body; // Массив записей
-    console.log('Получены данные:\n', JSON.stringify(data, null, 2));
+    fileName = req.body.fileName; // Имя файла сразу сохраянем
+
+    let data = req.body.data; // Массив записей
+    console.log("Получены данные:\n", JSON.stringify(data, null, 2));
 
     // 1) Пытаемся взять актуальный файл из S3
     // let workbook = await loadWorkbookFromS3();
@@ -218,7 +261,7 @@ app.post('/receive-data', async (req, res) => {
     // }
 
     // Для наглядности здесь просто сразу берем локальный template.xlsx
-    console.log('Файл в S3 не найден, используем локальный template.xlsx');
+    console.log("Файл в S3 не найден, используем локальный template.xlsx");
     let workbook = await XlsxPopulate.fromFileAsync(excelFilePath);
 
     const sheet = workbook.sheet(0);
@@ -230,7 +273,7 @@ app.post('/receive-data', async (req, res) => {
 
     // Вспомогательная функция для вставки "итоговой" строки
     function insertSummaryRow() {
-      sheet.cell(`A${currentRow}`).value('Итого:');
+      sheet.cell(`A${currentRow}`).value("Итого:");
       addSummaryRow(sheet, currentRow, groupStartRow, currentRow - 1);
       currentRow++;
     }
@@ -244,7 +287,7 @@ app.post('/receive-data', async (req, res) => {
 
     // Перебираем записи
     for (const record of data) {
-      const currentDate = record.Дата || '';
+      const currentDate = record.Дата || "";
 
       // Если дата изменилась и у нас уже была дата, вставляем итог
       if (lastDate && lastDate !== currentDate) {
@@ -260,6 +303,8 @@ app.post('/receive-data', async (req, res) => {
       // Переходим на следующую строку
       currentRow++;
     }
+
+    console.log("Всего строк:", currentRow);
 
     // Когда записи закончились, но осталась "последняя" группа
     if (data.length > 0) {
@@ -280,32 +325,31 @@ app.post('/receive-data', async (req, res) => {
       s3Client,
       new GetObjectCommand({
         Bucket: bucketName,
-        Key: s3Key
+        Key: `uploads/${fileName}.xlsx`,
       }),
       { expiresIn: 3600 }
     );
 
     return res.json({
       success: true,
-      message: 'Файл успешно обновлён и загружен в S3',
-      fileUrl: downloadUrl
+      message: "Файл успешно обновлён и загружен в S3",
+      fileUrl: downloadUrl,
     });
   } catch (error) {
-    console.error('Ошибка при обработке данных:', error);
+    console.error("Ошибка при обработке данных:", error);
     res.status(500).json({
       success: false,
-      message: 'Ошибка при обработке данных'
+      message: "Ошибка при обработке данных",
     });
   }
 });
 
-
-app.get('/download-latest', (req, res) => {
-  const file = path.join(__dirname, 'template.xlsx');
-  res.download(file, 'Updated.xlsx', err => {
+app.get("/download-latest", (req, res) => {
+  const file = path.join(__dirname, "template.xlsx");
+  res.download(file, "Updated.xlsx", (err) => {
     if (err) {
-      console.error('Ошибка при скачивании:', err);
-      res.status(500).send('Ошибка при скачивании файла');
+      console.error("Ошибка при скачивании:", err);
+      res.status(500).send("Ошибка при скачивании файла");
     }
   });
 });
