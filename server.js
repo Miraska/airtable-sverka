@@ -97,27 +97,25 @@ function findNextEmptyRow(sheet, startRow = 3) {
   return row;
 }
 
+
+
 /**
- * Функция заполнения одной строки: данные в нужные столбцы.
- * По условному примеру:
- *  - A: Цифра (можно просто 1, 2, 3, ... или Итого)
- *  - B: Дата (дд.мм.гггг)
- *  - D: Плательщик (Контрагент)
- *  - E: Получатель
- *  - F: Курс
- *  - H: Рубли (к выдаче)
- *  - J: Доллары (к выдаче)
- *  - L: USDT (к выдаче)
- *  - N: EURO (к выдаче)
- *  - U: Комментарий
+ * Функция заполнения одной строки: данные в нужные столбцы и формулы
+ * для "промежуточного" баланса, исключая строки "Итого".
+ *
+ * @param {Object} sheet - Лист XlsxPopulate
+ * @param {number} rowIndex - Индекс строки, которую заполняем
+ * @param {Object} record - Объект с данными (например, из JSON)
+ * @param {number} [startRow=3] - С какой строки начинаются записи
  */
 function fillRow(sheet, rowIndex, record, startRow = 3) {
-  // Колонка A
+  // Колонка A — для примера вставляем "1", 
+  // у вас может быть другая логика (или пусто)
   sheet.cell(`A${rowIndex}`).value(1);
 
   // Преобразуем дату к формату дд.мм.гггг
   // Если значение в record.Дата корректное, парсим и ставим формат
-  let dateObj = new Date(record.Дата);
+  const dateObj = new Date(record.Дата);
   if (!isNaN(dateObj.valueOf())) {
     sheet.cell(`B${rowIndex}`).value(dateObj);
     // Устанавливаем нужный формат даты
@@ -133,21 +131,20 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
   // Получатель
   sheet.cell(`E${rowIndex}`).value(record.Получатель?.[0]?.name || "");
 
-  // Курс
+  // Курс (может быть массивом или строкой)
   const course = Array.isArray(record["Курс"])
     ? record["Курс"].join("; ")
     : record["Курс"] || "";
   sheet.cell(`F${rowIndex}`).value(course);
 
-  // Комментарий
+  // Комментарий (у вас в JSON это "Комментарий (from Ордер)")
   const comment = Array.isArray(record["Комментарий (from Ордер)"])
     ? record["Комментарий (from Ордер)"].join("; ")
     : record["Комментарий (from Ордер)"] || "";
   sheet.cell(`AA${rowIndex}`).value(comment);
 
-  // Логика раскладки по валютам:
-
-  // Смотрим рубли
+  // ----- Раскладка по валютам -----
+  // Рубли
   if (record["Сумма RUB"]) {
     // К выдаче рубли - колонка H
     sheet.cell(`H${rowIndex}`).value(record["Сумма RUB"]);
@@ -161,7 +158,7 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
 
   // USDT
   if (record["Сумма USDT"]) {
-    // К выдаче USDT (ТЕЗЕР) → колонка L
+    // К выдаче USDT (Тезер) → колонка L
     sheet.cell(`L${rowIndex}`).value(record["Сумма USDT"]);
   }
 
@@ -180,25 +177,46 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
     sheet.cell(`R${rowIndex}`).value(record["Сумма AED"]);
   }
 
+  // ----- Формулы для промежуточного баланса -----
+  // Используем SUMIF, чтобы не учитывались строки, где в A = "Итого".
 
-  // Баланс на конец дня Рубли
-  sheet.cell(`U${rowIndex}`).formula(`=SUM(H${startRow}:I${rowIndex})`);
+  // Баланс на конец дня (Рубли = H + I)
+  sheet.cell(`U${rowIndex}`).formula(
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", H${startRow}:H${rowIndex})` +
+    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", I${startRow}:I${rowIndex})`
+  );
 
-  // Баланс на конец дня Доллары
-  sheet.cell(`V${rowIndex}`).formula(`=SUM(J${startRow}:K${rowIndex})`);
+  // Баланс на конец дня (Доллары = J + K)
+  sheet.cell(`V${rowIndex}`).formula(
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", J${startRow}:J${rowIndex})` +
+    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", K${startRow}:K${rowIndex})`
+  );
 
-  // Баланс на конец дня USDT
-  sheet.cell(`W${rowIndex}`).formula(`=SUM(L${startRow}:M${rowIndex})`);
+  // Баланс на конец дня (USDT = L + M)
+  sheet.cell(`W${rowIndex}`).formula(
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", L${startRow}:L${rowIndex})` +
+    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", M${startRow}:M${rowIndex})`
+  );
 
-  // Баланс на конец дня EURO
-  sheet.cell(`X${rowIndex}`).formula(`=SUM(N${startRow}:O${rowIndex})`);
+  // Баланс на конец дня (EURO = N + O)
+  sheet.cell(`X${rowIndex}`).formula(
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", N${startRow}:N${rowIndex})` +
+    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", O${startRow}:O${rowIndex})`
+  );
 
-  // Баланс на конец дня CNY
-  sheet.cell(`Y${rowIndex}`).formula(`=SUM(P${startRow}:Q${rowIndex})`);
+  // Баланс на конец дня (CNY = P + Q)
+  sheet.cell(`Y${rowIndex}`).formula(
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", P${startRow}:P${rowIndex})` +
+    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", Q${startRow}:Q${rowIndex})`
+  );
 
-  // Баланс на конец дня AED
-  sheet.cell(`Z${rowIndex}`).formula(`=SUM(R${startRow}:S${rowIndex})`);
+  // Баланс на конец дня (AED = R + S)
+  sheet.cell(`Z${rowIndex}`).formula(
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", R${startRow}:R${rowIndex})` +
+    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", S${startRow}:S${rowIndex})`
+  );
 }
+
 
 /**
  * Вставляем строку «итоговой» формулы и заливаем её чёрным цветом
