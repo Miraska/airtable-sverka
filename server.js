@@ -219,16 +219,16 @@ function addSummaryRow(sheet, rowIndex, startRow, endRow) {
   sheet.cell(`R${rowIndex}`).formula(`=SUM(R${startRow}:R${endRow})`);
   sheet.cell(`S${rowIndex}`).formula(`=SUM(S${startRow}:S${endRow})`);
 
-  sheet.cell(`U${rowIndex}`).formula(`=SUM(U${startRow}:U${endRow})`);
-  sheet.cell(`V${rowIndex}`).formula(`=SUM(V${startRow}:V${endRow})`);
-  sheet.cell(`W${rowIndex}`).formula(`=SUM(W${startRow}:W${endRow})`);
-  sheet.cell(`X${rowIndex}`).formula(`=SUM(X${startRow}:X${endRow})`);
-  sheet.cell(`Y${rowIndex}`).formula(`=SUM(Y${startRow}:Y${endRow})`);
-  sheet.cell(`Z${rowIndex}`).formula(`=SUM(Z${startRow}:Z${endRow})`);
+  sheet.cell(`U${rowIndex}`).formula(`=H${rowIndex}`);
+  sheet.cell(`V${rowIndex}`).formula(`=J${rowIndex}`);
+  sheet.cell(`W${rowIndex}`).formula(`=L${rowIndex}`);
+  sheet.cell(`X${rowIndex}`).formula(`=N${rowIndex}`);
+  sheet.cell(`Y${rowIndex}`).formula(`=P${rowIndex}`);
+  sheet.cell(`Z${rowIndex}`).formula(`=R${rowIndex}`);
 
   // Заливаем всю строку чёрным, делаем шрифт белым
   sheet.row(rowIndex).style({
-    fill: "000000",
+    fill: "808080",
     fontColor: "FFFFFF",
     bold: true,
   });
