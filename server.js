@@ -21,7 +21,7 @@ app.use(cors());
 app.use(bodyParser.json({ limit: '1mb' }));
 app.use(bodyParser.urlencoded({ limit: '1mb', extended: true }));
 
-const PORT = 3000;
+const PORT = 8080;
 let fileName;
 
 // Путь к локальному шаблону
