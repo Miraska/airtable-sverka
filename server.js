@@ -181,23 +181,23 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
 
   // Выдано ========================================================
   if (record["Сумма RUB КЕШ"]) {
-    sheet.cell(`I${rowIndex}`).value(record["Сумма AED"]);
+    sheet.cell(`I${rowIndex}`).value(record["Сумма RUB КЕШ"]);
   }
 
   if (record["Сумма USD КЕШ"]) {
-    sheet.cell(`K${rowIndex}`).value(record["Сумма AED"]);
+    sheet.cell(`K${rowIndex}`).value(record["Сумма USD КЕШ"]);
   }
 
   if (record["Сумма CNY КЕШ"]) {
-    sheet.cell(`Q${rowIndex}`).value(record["Сумма AED"]);
+    sheet.cell(`Q${rowIndex}`).value(record["Сумма CNY КЕШ"]);
   }
 
   if (record["Сумма EURO КЕШ"]) {
-    sheet.cell(`O${rowIndex}`).value(record["Сумма AED"]);
+    sheet.cell(`O${rowIndex}`).value(record["Сумма EURO КЕШ"]);
   }
 
   if (record["Сумма AED КЕШ"]) {
-    sheet.cell(`S${rowIndex}`).value(record["Сумма AED"]);
+    sheet.cell(`S${rowIndex}`).value(record["Сумма AED КЕШ"]);
   }
 
 
