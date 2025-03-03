@@ -179,6 +179,28 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
     sheet.cell(`R${rowIndex}`).value(record["Сумма AED"]);
   }
 
+  // Выдано ========================================================
+  if (record["Сумма RUB КЕШ"]) {
+    sheet.cell(`I${rowIndex}`).value(record["Сумма AED"]);
+  }
+
+  if (record["Сумма USD КЕШ"]) {
+    sheet.cell(`K${rowIndex}`).value(record["Сумма AED"]);
+  }
+
+  if (record["Сумма CNY КЕШ"]) {
+    sheet.cell(`Q${rowIndex}`).value(record["Сумма AED"]);
+  }
+
+  if (record["Сумма EURO КЕШ"]) {
+    sheet.cell(`O${rowIndex}`).value(record["Сумма AED"]);
+  }
+
+  if (record["Сумма AED КЕШ"]) {
+    sheet.cell(`S${rowIndex}`).value(record["Сумма AED"]);
+  }
+
+
   // ----- Формулы для промежуточного баланса -----
   // Используем SUMIF, чтобы не учитывались строки, где в A = "Итого".
 
