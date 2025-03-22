@@ -127,77 +127,81 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
     sheet.cell(`B${rowIndex}`).value(record.Дата || "");
   }
 
+  sheet.cell(`C${rowIndex}`).value(record.Сумма_Ордер?.[0] || 0);
+
+  sheet.cell(`D${rowIndex}`).value(record.Валюта?.name || "");
+  
   // Плательщик (у вас в JSON это "Отправитель")
-  sheet.cell(`D${rowIndex}`).value(record.Отправитель?.[0]?.name || "");
+  sheet.cell(`E${rowIndex}`).value(record.Отправитель?.[0]?.name || "");
 
   // Получатель
-  sheet.cell(`E${rowIndex}`).value(record.Получатель?.[0]?.name || "");
+  sheet.cell(`F${rowIndex}`).value(record.Получатель?.[0]?.name || "");
 
   // Курс (может быть массивом или строкой)
   const course = Array.isArray(record["Курс"])
     ? record["Курс"].join("; ")
     : record["Курс"] || "";
-  sheet.cell(`F${rowIndex}`).value(course);
+  sheet.cell(`G${rowIndex}`).value(course);
 
   // Комментарий (у вас в JSON это "Комментарий (from Ордер)")
   const comment = Array.isArray(record["Комментарий (from Ордер)"])
     ? record["Комментарий (from Ордер)"].join("; ")
     : record["Комментарий (from Ордер)"] || "";
-  sheet.cell(`AA${rowIndex}`).value(comment);
+  sheet.cell(`AB${rowIndex}`).value(comment);
 
   // ----- Раскладка по валютам -----
   // Рубли
   if (record["Сумма RUB"]) {
     // К выдаче рубли - колонка H
-    sheet.cell(`H${rowIndex}`).value(record["Сумма RUB"]);
+    sheet.cell(`I${rowIndex}`).value(record["Сумма RUB"]);
   }
 
   // Доллары
   if (record["Сумма USD"]) {
     // К выдаче доллары → колонка J
-    sheet.cell(`J${rowIndex}`).value(record["Сумма USD"]);
+    sheet.cell(`K${rowIndex}`).value(record["Сумма USD"]);
   }
 
   // USDT
   if (record["Сумма USDT"]) {
     // К выдаче USDT (Тезер) → колонка L
-    sheet.cell(`L${rowIndex}`).value(record["Сумма USDT"]);
+    sheet.cell(`M${rowIndex}`).value(record["Сумма USDT"]);
   }
 
   // EURO
   if (record["Сумма EURO"]) {
-    sheet.cell(`N${rowIndex}`).value(record["Сумма EURO"]);
+    sheet.cell(`O${rowIndex}`).value(record["Сумма EURO"]);
   }
 
   // CNY
   if (record["Сумма CNY"]) {
-    sheet.cell(`P${rowIndex}`).value(record["Сумма CNY"]);
+    sheet.cell(`Q${rowIndex}`).value(record["Сумма CNY"]);
   }
 
   // AED
   if (record["Сумма AED"]) {
-    sheet.cell(`R${rowIndex}`).value(record["Сумма AED"]);
+    sheet.cell(`S${rowIndex}`).value(record["Сумма AED"]);
   }
 
   // Выдано ========================================================
   if (record["Сумма RUB КЕШ"]) {
-    sheet.cell(`I${rowIndex}`).value(record["Сумма RUB КЕШ"]);
+    sheet.cell(`J${rowIndex}`).value(record["Сумма RUB КЕШ"]);
   }
 
   if (record["Сумма USD КЕШ"]) {
-    sheet.cell(`K${rowIndex}`).value(record["Сумма USD КЕШ"]);
+    sheet.cell(`L${rowIndex}`).value(record["Сумма USD КЕШ"]);
   }
 
   if (record["Сумма CNY КЕШ"]) {
-    sheet.cell(`Q${rowIndex}`).value(record["Сумма CNY КЕШ"]);
+    sheet.cell(`R${rowIndex}`).value(record["Сумма CNY КЕШ"]);
   }
 
   if (record["Сумма EURO КЕШ"]) {
-    sheet.cell(`O${rowIndex}`).value(record["Сумма EURO КЕШ"]);
+    sheet.cell(`P${rowIndex}`).value(record["Сумма EURO КЕШ"]);
   }
 
   if (record["Сумма AED КЕШ"]) {
-    sheet.cell(`S${rowIndex}`).value(record["Сумма AED КЕШ"]);
+    sheet.cell(`T${rowIndex}`).value(record["Сумма AED КЕШ"]);
   }
 
 
@@ -205,37 +209,37 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
   // Используем SUMIF, чтобы не учитывались строки, где в A = "Итого".
 
   // Баланс на конец дня (Рубли = H + I)
-  sheet.cell(`U${rowIndex}`).formula(
+  sheet.cell(`V${rowIndex}`).formula(
     `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", H${startRow}:H${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", I${startRow}:I${rowIndex})`
   );
 
   // Баланс на конец дня (Доллары = J + K)
-  sheet.cell(`V${rowIndex}`).formula(
+  sheet.cell(`W${rowIndex}`).formula(
     `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", J${startRow}:J${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", K${startRow}:K${rowIndex})`
   );
 
   // Баланс на конец дня (USDT = L + M)
-  sheet.cell(`W${rowIndex}`).formula(
+  sheet.cell(`X${rowIndex}`).formula(
     `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", L${startRow}:L${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", M${startRow}:M${rowIndex})`
   );
 
   // Баланс на конец дня (EURO = N + O)
-  sheet.cell(`X${rowIndex}`).formula(
+  sheet.cell(`Y${rowIndex}`).formula(
     `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", N${startRow}:N${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", O${startRow}:O${rowIndex})`
   );
 
   // Баланс на конец дня (CNY = P + Q)
-  sheet.cell(`Y${rowIndex}`).formula(
+  sheet.cell(`Z${rowIndex}`).formula(
     `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", P${startRow}:P${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", Q${startRow}:Q${rowIndex})`
   );
 
   // Баланс на конец дня (AED = R + S)
-  sheet.cell(`Z${rowIndex}`).formula(
+  sheet.cell(`AA${rowIndex}`).formula(
     `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", R${startRow}:R${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", S${startRow}:S${rowIndex})`
   );
@@ -248,7 +252,6 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
  */
 function addSummaryRow(sheet, rowIndex, startRow, endRow) {
   // Формулы для валют
-  sheet.cell(`H${rowIndex}`).formula(`=SUM(H${startRow}:H${endRow})`);
   sheet.cell(`I${rowIndex}`).formula(`=SUM(I${startRow}:I${endRow})`);
   sheet.cell(`J${rowIndex}`).formula(`=SUM(J${startRow}:J${endRow})`);
   sheet.cell(`K${rowIndex}`).formula(`=SUM(K${startRow}:K${endRow})`);
@@ -260,13 +263,14 @@ function addSummaryRow(sheet, rowIndex, startRow, endRow) {
   sheet.cell(`Q${rowIndex}`).formula(`=SUM(Q${startRow}:Q${endRow})`);
   sheet.cell(`R${rowIndex}`).formula(`=SUM(R${startRow}:R${endRow})`);
   sheet.cell(`S${rowIndex}`).formula(`=SUM(S${startRow}:S${endRow})`);
-
-  sheet.cell(`U${rowIndex}`).formula(`=H${rowIndex}`);
+  sheet.cell(`T${rowIndex}`).formula(`=SUM(H${startRow}:H${endRow})`);
+  
   sheet.cell(`V${rowIndex}`).formula(`=J${rowIndex}`);
   sheet.cell(`W${rowIndex}`).formula(`=L${rowIndex}`);
   sheet.cell(`X${rowIndex}`).formula(`=N${rowIndex}`);
   sheet.cell(`Y${rowIndex}`).formula(`=P${rowIndex}`);
   sheet.cell(`Z${rowIndex}`).formula(`=R${rowIndex}`);
+  sheet.cell(`AA${rowIndex}`).formula(`=H${rowIndex}`);
 
   // Заливаем всю строку чёрным, делаем шрифт белым
   sheet.row(rowIndex).style({
