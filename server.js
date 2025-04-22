@@ -208,22 +208,12 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
   // Используем SUMIF, чтобы не учитывались строки, где в A = "Итого".
 
   // Баланс на конец дня (Рубли = H + I)
-  sheet.cell(`V${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", I${rowIndex}:J${rowIndex})`);
-
-  // Баланс на конец дня (Доллары = J + K)
-  sheet.cell(`W${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", K${rowIndex}:L${rowIndex})`);
-
-  // Баланс на конец дня (USDT = L + M)
-  sheet.cell(`X${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", M${rowIndex}:N${rowIndex})`);
-
-  // Баланс на конец дня (EURO = N + O)
-  sheet.cell(`Y${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", O${rowIndex}:P${rowIndex})`);
-
-  // Баланс на конец дня (CNY = P + Q)
-  sheet.cell(`Z${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", Q${rowIndex}:R${rowIndex})`);
-
-  // Баланс на конец дня (AED = R + S)
-  sheet.cell(`AA${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", S${rowIndex}:T${rowIndex})`);
+  sheet.cell(`V${rowIndex}`).formula(`=SUM(I${rowIndex}:J${rowIndex})`);
+  sheet.cell(`W${rowIndex}`).formula(`=SUM(K${rowIndex}:L${rowIndex})`);
+  sheet.cell(`X${rowIndex}`).formula(`=SUM(M${rowIndex}:N${rowIndex})`);
+  sheet.cell(`Y${rowIndex}`).formula(`=SUM(O${rowIndex}:P${rowIndex})`);
+  sheet.cell(`Z${rowIndex}`).formula(`=SUM(Q${rowIndex}:R${rowIndex})`);
+  sheet.cell(`AA${rowIndex}`).formula(`=SUM(S${rowIndex}:T${rowIndex})`);
 }
 
 
