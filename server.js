@@ -205,44 +205,25 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
   }
 
 
-  // ----- Формулы для промежуточного баланса -----
   // Используем SUMIF, чтобы не учитывались строки, где в A = "Итого".
 
   // Баланс на конец дня (Рубли = H + I)
-  sheet.cell(`V${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", J${rowIndex}:J${rowIndex})` +
-    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", I${rowIndex}:I${rowIndex})`
-  );
+  sheet.cell(`V${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", I${rowIndex}:J${rowIndex})`);
 
   // Баланс на конец дня (Доллары = J + K)
-  sheet.cell(`W${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", L${rowIndex}:L${rowIndex})` +
-    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", K${rowIndex}:K${rowIndex})`
-  );
+  sheet.cell(`W${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", K${rowIndex}:L${rowIndex})`);
 
   // Баланс на конец дня (USDT = L + M)
-  sheet.cell(`X${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", N${rowIndex}:N${rowIndex})` +
-    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", M${rowIndex}:M${rowIndex})`
-  );
+  sheet.cell(`X${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", M${rowIndex}:N${rowIndex})`);
 
   // Баланс на конец дня (EURO = N + O)
-  sheet.cell(`Y${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", P${rowIndex}:P${rowIndex})` +
-    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", O${rowIndex}:O${rowIndex})`
-  );
+  sheet.cell(`Y${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", O${rowIndex}:P${rowIndex})`);
 
   // Баланс на конец дня (CNY = P + Q)
-  sheet.cell(`Z${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", R${rowIndex}:R${rowIndex})` +
-    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", Q${rowIndex}:Q${rowIndex})`
-  );
+  sheet.cell(`Z${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", Q${rowIndex}:R${rowIndex})`);
 
   // Баланс на конец дня (AED = R + S)
-  sheet.cell(`AA${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", T${rowIndex}:T${rowIndex})` +
-    `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", S${rowIndex}:S${rowIndex})`
-  );
+  sheet.cell(`AA${rowIndex}`).formula(`=SUMIF($A$${rowIndex}:$A$${rowIndex}, "<>Итого", S${rowIndex}:T${rowIndex})`);
 }
 
 
