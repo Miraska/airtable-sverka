@@ -210,37 +210,37 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
 
   // Баланс на конец дня (Рубли = H + I)
   sheet.cell(`V${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", H${startRow}:H${rowIndex})` +
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", J${startRow}:J${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", I${startRow}:I${rowIndex})`
   );
 
   // Баланс на конец дня (Доллары = J + K)
   sheet.cell(`W${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", J${startRow}:J${rowIndex})` +
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", L${startRow}:L${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", K${startRow}:K${rowIndex})`
   );
 
   // Баланс на конец дня (USDT = L + M)
   sheet.cell(`X${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", L${startRow}:L${rowIndex})` +
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", N${startRow}:N${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", M${startRow}:M${rowIndex})`
   );
 
   // Баланс на конец дня (EURO = N + O)
   sheet.cell(`Y${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", N${startRow}:N${rowIndex})` +
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", P${startRow}:P${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", O${startRow}:O${rowIndex})`
   );
 
   // Баланс на конец дня (CNY = P + Q)
   sheet.cell(`Z${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", P${startRow}:P${rowIndex})` +
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", R${startRow}:R${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", Q${startRow}:Q${rowIndex})`
   );
 
   // Баланс на конец дня (AED = R + S)
   sheet.cell(`AA${rowIndex}`).formula(
-    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", R${startRow}:R${rowIndex})` +
+    `=SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", T${startRow}:T${rowIndex})` +
     `+SUMIF($A$${startRow}:$A$${rowIndex}, "<>Итого", S${startRow}:S${rowIndex})`
   );
 }
@@ -265,12 +265,12 @@ function addSummaryRow(sheet, rowIndex, startRow, endRow) {
   sheet.cell(`S${rowIndex}`).formula(`=SUM(S${startRow}:S${endRow})`);
   sheet.cell(`T${rowIndex}`).formula(`=SUM(H${startRow}:H${endRow})`);
   
-  sheet.cell(`V${rowIndex}`).formula(`=J${rowIndex}`);
-  sheet.cell(`W${rowIndex}`).formula(`=L${rowIndex}`);
-  sheet.cell(`X${rowIndex}`).formula(`=N${rowIndex}`);
-  sheet.cell(`Y${rowIndex}`).formula(`=P${rowIndex}`);
-  sheet.cell(`Z${rowIndex}`).formula(`=R${rowIndex}`);
-  sheet.cell(`AA${rowIndex}`).formula(`=H${rowIndex}`);
+  sheet.cell(`V${rowIndex}`).formula(`=SUM(I${startRow}:J${endRow})`);
+  sheet.cell(`W${rowIndex}`).formula(`=SUM(K${startRow}:L${endRow})`);
+  sheet.cell(`X${rowIndex}`).formula(`=SUM(M${startRow}:N${endRow})`);
+  sheet.cell(`Y${rowIndex}`).formula(`=SUM(O${startRow}:P${endRow})`);
+  sheet.cell(`Z${rowIndex}`).formula(`=SUM(Q${startRow}:R${endRow})`);
+  sheet.cell(`AA${rowIndex}`).formula(`=SUM(S${startRow}:T${endRow})`);
 
   // Заливаем всю строку чёрным, делаем шрифт белым
   sheet.row(rowIndex).style({
