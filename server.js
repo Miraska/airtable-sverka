@@ -285,12 +285,12 @@ function addSummaryRow(sheet, rowIndex, startRow, endRow) {
   // sheet.cell(`AA${rowIndex}`).formula(`=SUM(S${startRow}:T${endRow})`);
 
   const firstDataRow = 3;
-  sheet.cell(`V${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",V${firstDataRow}:V${rowIndex-1})`);
-  sheet.cell(`W${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",W${firstDataRow}:W${rowIndex-1})`);
-  sheet.cell(`X${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",X${firstDataRow}:X${rowIndex-1})`);
-  sheet.cell(`Y${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",Y${firstDataRow}:Y${rowIndex-1})`);
-  sheet.cell(`Z${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",Z${firstDataRow}:Z${rowIndex-1})`);
-  sheet.cell(`AA${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",AA${firstDataRow}:AA${rowIndex-1})`);
+  sheet.cell(`V${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex},"<>Итого:",V${firstDataRow}:V${rowIndex})`);
+  sheet.cell(`W${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex},"<>Итого:",W${firstDataRow}:W${rowIndex})`);
+  sheet.cell(`X${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex},"<>Итого:",X${firstDataRow}:X${rowIndex})`);
+  sheet.cell(`Y${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex},"<>Итого:",Y${firstDataRow}:Y${rowIndex})`);
+  sheet.cell(`Z${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex},"<>Итого:",Z${firstDataRow}:Z${rowIndex})`);
+  sheet.cell(`AA${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex},"<>Итого:",AA${firstDataRow}:AA${rowIndex})`);
 
   // Заливаем всю строку чёрным, делаем шрифт белым
   sheet.row(rowIndex).style({
