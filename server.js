@@ -110,6 +110,15 @@ function findNextEmptyRow(sheet, startRow = 3) {
  * @param {Object} record - Объект с данными (например, из JSON)
  * @param {number} [startRow=3] - С какой строки начинаются записи
  */
+/**
+ * Функция заполнения одной строки: данные в нужные столбцы и формулы
+ * для "промежуточного" баланса, исключая строки "Итого".
+ *
+ * @param {Object} sheet - Лист XlsxPopulate
+ * @param {number} rowIndex - Индекс строки, которую заполняем
+ * @param {Object} record - Объект с данными (например, из JSON)
+ * @param {number} [startRow=3] - С какой строки начинаются записи
+ */
 function fillRow(sheet, rowIndex, record, startRow = 3) {
   // Колонка A — для примера вставляем "1", 
   // у вас может быть другая логика (или пусто)
@@ -127,10 +136,35 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
     sheet.cell(`B${rowIndex}`).value(record.Дата || "");
   }
 
-  sheet.cell(`C${rowIndex}`).value(record.Сумма_Ордер?.[0] || 0);
-
-  sheet.cell(`D${rowIndex}`).value(record.Валюта?.name || "");
+  // Определяем значение для колонки C на основе валюты (колонка D)
+  const currency = record.Валюта?.name || "";
+  sheet.cell(`D${rowIndex}`).value(currency);
   
+  let amount = 0;
+  switch (currency) {
+    case "RUB":
+      amount = record["Сумма RUB"] || 0;
+      break;
+    case "USD":
+      amount = record["Сумма USD"] || 0;
+      break;
+    case "USDT":
+      amount = record["Сумма USDT"] || 0;
+      break;
+    case "EURO":
+      amount = record["Сумма EURO"] || 0;
+      break;
+    case "CNY":
+      amount = record["Сумма CNY"] || 0;
+      break;
+    case "AED":
+      amount = record["Сумма AED"] || 0;
+      break;
+    default:
+      amount = record.Сумма_Ордер?.[0] || 0;
+  }
+  sheet.cell(`C${rowIndex}`).value(amount);
+
   // Плательщик (у вас в JSON это "Отправитель")
   sheet.cell(`E${rowIndex}`).value(record.Отправитель?.[0]?.name || "");
 
@@ -204,7 +238,6 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
     sheet.cell(`T${rowIndex}`).value(record["Сумма AED КЕШ"]);
   }
 
-
   // Используем SUMIF, чтобы не учитывались строки, где в A = "Итого".
 
   // Баланс на конец дня (Рубли = H + I)
@@ -215,7 +248,6 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
   sheet.cell(`Z${rowIndex}`).formula(`=SUM(Q${rowIndex}:R${rowIndex})`);
   sheet.cell(`AA${rowIndex}`).formula(`=SUM(S${rowIndex}:T${rowIndex})`);
 }
-
 
 /**
  * Вставляем строку «итоговой» формулы и заливаем её чёрным цветом
@@ -236,12 +268,20 @@ function addSummaryRow(sheet, rowIndex, startRow, endRow) {
   sheet.cell(`S${rowIndex}`).formula(`=SUM(S${startRow}:S${endRow})`);
   sheet.cell(`T${rowIndex}`).formula(`=SUM(H${startRow}:H${endRow})`);
   
-  sheet.cell(`V${rowIndex}`).formula(`=SUM(I${startRow}:J${endRow})`);
-  sheet.cell(`W${rowIndex}`).formula(`=SUM(K${startRow}:L${endRow})`);
-  sheet.cell(`X${rowIndex}`).formula(`=SUM(M${startRow}:N${endRow})`);
-  sheet.cell(`Y${rowIndex}`).formula(`=SUM(O${startRow}:P${endRow})`);
-  sheet.cell(`Z${rowIndex}`).formula(`=SUM(Q${startRow}:R${endRow})`);
-  sheet.cell(`AA${rowIndex}`).formula(`=SUM(S${startRow}:T${endRow})`);
+  // sheet.cell(`V${rowIndex}`).formula(`=SUM(I${startRow}:J${endRow})`);
+  // sheet.cell(`W${rowIndex}`).formula(`=SUM(K${startRow}:L${endRow})`);
+  // sheet.cell(`X${rowIndex}`).formula(`=SUM(M${startRow}:N${endRow})`);
+  // sheet.cell(`Y${rowIndex}`).formula(`=SUM(O${startRow}:P${endRow})`);
+  // sheet.cell(`Z${rowIndex}`).formula(`=SUM(Q${startRow}:R${endRow})`);
+  // sheet.cell(`AA${rowIndex}`).formula(`=SUM(S${startRow}:T${endRow})`);
+
+  const firstDataRow = 3;
+  sheet.cell(`V${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",V${firstDataRow}:V${rowIndex-1})`);
+  sheet.cell(`W${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",W${firstDataRow}:W${rowIndex-1})`);
+  sheet.cell(`X${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",X${firstDataRow}:X${rowIndex-1})`);
+  sheet.cell(`Y${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",Y${firstDataRow}:Y${rowIndex-1})`);
+  sheet.cell(`Z${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",Z${firstDataRow}:Z${rowIndex-1})`);
+  sheet.cell(`AA${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",AA${firstDataRow}:AA${rowIndex-1})`);
 
   // Заливаем всю строку чёрным, делаем шрифт белым
   sheet.row(rowIndex).style({
