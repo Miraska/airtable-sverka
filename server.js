@@ -240,13 +240,22 @@ function fillRow(sheet, rowIndex, record, startRow = 3) {
 
   // Используем SUMIF, чтобы не учитывались строки, где в A = "Итого".
 
-  // Баланс на конец дня (Рубли = H + I)
-  sheet.cell(`V${rowIndex}`).formula(`=SUM(I${rowIndex}:J${rowIndex})`);
-  sheet.cell(`W${rowIndex}`).formula(`=SUM(K${rowIndex}:L${rowIndex})`);
-  sheet.cell(`X${rowIndex}`).formula(`=SUM(M${rowIndex}:N${rowIndex})`);
-  sheet.cell(`Y${rowIndex}`).formula(`=SUM(O${rowIndex}:P${rowIndex})`);
-  sheet.cell(`Z${rowIndex}`).formula(`=SUM(Q${rowIndex}:R${rowIndex})`);
-  sheet.cell(`AA${rowIndex}`).formula(`=SUM(S${rowIndex}:T${rowIndex})`);
+  // // Баланс на конец дня (Рубли = H + I)
+  // sheet.cell(`V${rowIndex}`).formula(`=SUM(I${rowIndex}:J${rowIndex})`);
+  // sheet.cell(`W${rowIndex}`).formula(`=SUM(K${rowIndex}:L${rowIndex})`);
+  // sheet.cell(`X${rowIndex}`).formula(`=SUM(M${rowIndex}:N${rowIndex})`);
+  // sheet.cell(`Y${rowIndex}`).formula(`=SUM(O${rowIndex}:P${rowIndex})`);
+  // sheet.cell(`Z${rowIndex}`).formula(`=SUM(Q${rowIndex}:R${rowIndex})`);
+  // sheet.cell(`AA${rowIndex}`).formula(`=SUM(S${rowIndex}:T${rowIndex})`);
+
+
+  const firstDataRow = 3;
+  sheet.cell(`V${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",I${firstDataRow}:J${rowIndex-1})`);
+  sheet.cell(`W${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",K${firstDataRow}:L${rowIndex-1})`);
+  sheet.cell(`X${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",M${firstDataRow}:N${rowIndex-1})`);
+  sheet.cell(`Y${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",O${firstDataRow}:P${rowIndex-1})`);
+  sheet.cell(`Z${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",Q${firstDataRow}:R${rowIndex-1})`);
+  sheet.cell(`AA${rowIndex}`).formula(`=SUMIF(A${firstDataRow}:A${rowIndex-1},"<>Итого:",S${firstDataRow}:T${rowIndex-1})`);
 }
 
 /**
